@@ -81,9 +81,8 @@ Target "Merge" (fun _ ->
     // merge current to master
     MergeInto sourceBranchName "master"
 
-    // if release branch also merge into develop
-    if IsReleaseBranch sourceBranchName then    
-        MergeInto sourceBranchName "develop"
+    // merge current into develop
+    MergeInto sourceBranchName "develop"
 )
 
 Target "CloseBranch" (fun _ ->
