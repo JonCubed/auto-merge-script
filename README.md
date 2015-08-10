@@ -26,8 +26,8 @@ executing the script. It requires nuget.
 | ------------- | ------------------------ | ----------- |
 | nugetExe      | .\\.nuget\\NuGet.exe     | path to NuGet exe (only for PowerShell) |
 | remote        | origin                   | name of the remote for the repo |
-| validSource   | (hotfix|release)/.*      | regex pattern for what a valid local source branch is for merging |
-| destination   | ^origin/(master|develop) | regex pattern for find which remote branched the source branch should be merged into |
+| validSource   | (hotfix\|release)/.*      | regex pattern for what a valid local source branch is for merging |
+| destination   | ^origin/(master\|develop) | regex pattern for find which remote branched the source branch should be merged into |
 | tag           |                          | a tag value to tag a destination branch with |
 | tagWithBranch | true                     | uses the source branch name as a tag value |
 | branchToTag   | master                   | local destination branch that should be tagged |
