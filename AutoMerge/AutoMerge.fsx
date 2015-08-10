@@ -48,6 +48,9 @@ let RemoteBranchExists repoDir branch =
 let GetLocalBranchFromRemote branch = 
     Regex.Replace(branch, @"^"+remoteName+"/(\s*)", "$1")
 
+let GetTagFromBranchName branch =
+    Regex.Replace(branch, @"^(?:\w*/)?(.*)$", "$1")    
+
 let MergeInto sourceBranch remoteBranch =
     let localBranch = GetLocalBranchFromRemote remoteBranch
         
@@ -82,6 +85,10 @@ let MergeInto sourceBranch remoteBranch =
     else
         trace ("Pushing changes to remote")
         Git.Branches.pushBranch repoDirectory remoteName localBranch
+
+let TagCurrentBranchWith tag = 
+    Git.Branches.tag repoDirectory tag
+    Git.Branches.pushTag repoDirectory remoteName tag
     
 ////////////////////////////////
 //// Targets
@@ -103,8 +110,9 @@ Target "Merge" (fun _ ->
     // get all branches that match the destination regex
     let remoteBranches = Git.Branches.getRemoteBranches repoDirectory |> List.where(IsValidRemoteBranch)
 
-    for branch in remoteBranches do         
-        let tagThisBranch = (branchToTag =? GetLocalBranchFromRemote branch)
+    for branch in remoteBranches do    
+        let localBranch = GetLocalBranchFromRemote branch
+        let tagThisBranch = (branchToTag =? localBranch)
         if tagThisBranch then
             trace "Tag this branch"
 
@@ -112,11 +120,12 @@ Target "Merge" (fun _ ->
     
         // tag branch with source branch name
         if tagThisBranch && useBranchNameAsTag then
-            Git.Branches.tag repoDirectory sourceBranchName
+            TagCurrentBranchWith (GetTagFromBranchName sourceBranchName)
 
         // tag branch with given tag (could be a build no.)
         if tagThisBranch && not (customTag = null) then
-            Git.Branches.tag repoDirectory customTag
+            TagCurrentBranchWith customTag
+                        
 )
 
 Target "CloseBranch" (fun _ ->
