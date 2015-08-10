@@ -1,21 +1,39 @@
 ﻿// include Fake lib
-#r @"../packages/FAKE.4.0.3/tools/FakeLib.dll"
+#r @"./packages/FAKE/tools/FakeLib.dll"
 
 open Fake
 open System.Text.RegularExpressions
 
+let getBoolBuildParamOrDefault name defaultValue =
+    bool.Parse(getBuildParamOrDefault name defaultValue)
+
+let (=?) s1 s2 = 
+    System.String.Equals(s1, s2, System.StringComparison.CurrentCultureIgnoreCase) 
+
+
 let mutable sourceBranchName = null
-let remoteName = "origin"
+let mutable repoDirectory = "."
+
+////////////////////////////////
+//// Read Command Line Params
+///////////////////////////////
+let remoteName = getBuildParamOrDefault "remote" "origin"
+let validSourceRegex = getBuildParamOrDefault "validSource" "(hotfix|release)/.*"
+let validDestinationRegex = getBuildParamOrDefault "destination" ("^"+remoteName+"/(master|develop)")
+let customTag = getBuildParamOrDefault "tag" null
+let useBranchNameAsTag = getBoolBuildParamOrDefault "tagWithBranch" "true"
+let branchToTag = getBuildParamOrDefault "branchToTag" "master"
+let deleteBranches = getBoolBuildParamOrDefault "delete" "true"
 
 ////////////////////////////////
 //// Functions
 ///////////////////////////////
 let IsValidSourceBranch name =
-   let m = Regex.Match(name,@"(hotfix|release)/.*") 
+   let m = Regex.Match(name,validSourceRegex) 
    m.Success
 
-let IsReleaseBranch name =
-   let m = Regex.Match(name,@"release/.*") 
+let IsValidRemoteBranch name =
+   let m = Regex.Match(name,validDestinationRegex) 
    m.Success
     
 let BranchExists branches branch = 
@@ -25,75 +43,106 @@ let LocalBranchExists repoDir branch =
     BranchExists (Git.Branches.getLocalBranches repoDir) branch
 
 let RemoteBranchExists repoDir branch = 
-    BranchExists (Git.Branches.getRemoteBranches repoDir) (remoteName+"/"+branch)
+    BranchExists (Git.Branches.getRemoteBranches repoDir) branch
 
-let MergeInto sourceBranch destinationBranch =
-    let remoteBranch = remoteName + "/" + destinationBranch
+let GetLocalBranchFromRemote branch = 
+    Regex.Replace(branch, @"^"+remoteName+"/(\s*)", "$1")
 
+let MergeInto sourceBranch remoteBranch =
+    let localBranch = GetLocalBranchFromRemote remoteBranch
+        
     // Check if remote branch exists
-    if not (RemoteBranchExists "." destinationBranch) then failwith ("Remote branch " + remoteBranch + " does not exist" )
+    if not (RemoteBranchExists repoDirectory remoteBranch) then failwith ("Remote branch " + remoteBranch + " does not exist" )
 
-    if LocalBranchExists "." destinationBranch then  
+    if LocalBranchExists repoDirectory localBranch then  
         // branch already checked out so update it
-        trace ("Switching to " + destinationBranch + " branch")
-        Git.Branches.checkoutBranch "." destinationBranch
+        trace ("Switching to " + localBranch + " branch")
+        Git.Branches.checkoutBranch repoDirectory localBranch
         trace "Pulling latest from tracking branch"
-        Git.Branches.pull "." remoteName destinationBranch
+        Git.Branches.pull repoDirectory remoteName localBranch
     else      
         // branch not checked out yet
-        trace ("Checking out remote branch " + remoteBranch + " to " + destinationBranch)
-        Git.Branches.checkoutTracked "." remoteBranch destinationBranch
+        trace ("Checking out remote branch " + remoteBranch + " to " + localBranch)
+        Git.Branches.checkoutTracked repoDirectory remoteBranch localBranch
 
     // We are ready to merge
-    let HeadBeforeMerge = Git.Information.getCurrentSHA1 "."
-    trace ("Merging " + sourceBranch + " into " + destinationBranch)
-    Git.Merge.merge "." Git.Merge.FastForwardFlag sourceBranch 
+    let HeadBeforeMerge = Git.Information.getCurrentSHA1 repoDirectory
+    trace ("Merging " + sourceBranch + " into " + localBranch)
+    Git.Merge.merge repoDirectory Git.Merge.FastForwardFlag sourceBranch 
 
     // if conflicts reset branch and fail
-    if Git.FileStatus.isInTheMiddleOfConflictedMerge "." then 
-        Git.Reset.hard "." remoteBranch null
-        failwith ("Failed to merge branch " + sourceBranch + " into " +  destinationBranch)
+    if Git.FileStatus.isInTheMiddleOfConflictedMerge repoDirectory then 
+        Git.Reset.hard repoDirectory remoteBranch null
+        failwith ("Failed to merge branch " + sourceBranch + " into " +  localBranch)
 
     // make sure there are changes to push
-    let headAfterMerge = Git.Information.getCurrentSHA1 "."    
-    if not (Git.Information.isAheadOf "." headAfterMerge HeadBeforeMerge) then
+    let headAfterMerge = Git.Information.getCurrentSHA1 repoDirectory   
+    if not (Git.Information.isAheadOf repoDirectory headAfterMerge HeadBeforeMerge) then
         trace "Info: Current branch is not ahead of remote"
     else
         trace ("Pushing changes to remote")
-        Git.Branches.pushBranch "." remoteName destinationBranch
+        Git.Branches.pushBranch repoDirectory remoteName localBranch
     
 ////////////////////////////////
 //// Targets
 ///////////////////////////////
 Target "FindGitFolder" (fun _ ->
-    let gitFolder = Git.CommandHelper.findGitDir "."
-    trace ("Git folder is " + gitFolder.FullName)
+    let gitFolder = Git.CommandHelper.findGitDir repoDirectory
+    let repoDirectory = gitFolder.FullName
+    trace ("Git folder is " + repoDirectory)
 )
 
 Target "TestCurrentBranch" (fun _ ->
-    sourceBranchName <- Git.Information.getBranchName "."
+    sourceBranchName <- Git.Information.getBranchName repoDirectory
     trace ("Current branch is " + sourceBranchName)
         
     if not (IsValidSourceBranch sourceBranchName) then failwith ("Current branch " + sourceBranchName + " is invalid")       
 )
 
 Target "Merge" (fun _ ->    
-    // merge current to master
-    MergeInto sourceBranchName "master"
+    // get all branches that match the destination regex
+    let remoteBranches = Git.Branches.getRemoteBranches repoDirectory |> List.where(IsValidRemoteBranch)
 
-    // merge current into develop
-    MergeInto sourceBranchName "develop"
+    for branch in remoteBranches do         
+        let tagThisBranch = (branchToTag =? GetLocalBranchFromRemote branch)
+        if tagThisBranch then
+            trace "Tag this branch"
+
+        MergeInto sourceBranchName branch 
+    
+        // tag branch with source branch name
+        if tagThisBranch && useBranchNameAsTag then
+            Git.Branches.tag repoDirectory sourceBranchName
+
+        // tag branch with given tag (could be a build no.)
+        if tagThisBranch && not (customTag = null) then
+            Git.Branches.tag repoDirectory customTag
 )
 
 Target "CloseBranch" (fun _ ->
-    // close the current branch
-    Git.Branches.deleteBranch "." true sourceBranchName
-    Git.Branches.pushBranch "." remoteName (":"+sourceBranchName)
+    if not deleteBranches then
+        trace "Closing of source branch skipped"
+    else
+        // close the current branch
+        Git.Branches.deleteBranch repoDirectory true sourceBranchName
+        Git.Branches.pushBranch repoDirectory remoteName (":"+sourceBranchName)
 )
 
 Target "GetBranches" (fun _ ->
-    // close the current branch
-    List.iter( trace ) (Git.Branches.getRemoteBranches ".")
+    // list all remote branches
+    List.iter( trace ) (Git.Branches.getRemoteBranches repoDirectory)
+)
+
+Target "Debug" (fun _ ->
+    trace ("sourceBranchName = " + sourceBranchName)
+    trace ("repoDirectory = " + repoDirectory)
+    trace ("remoteName [remote] = " + remoteName)
+    trace ("validSourceRegex [validSource] = " + validSourceRegex)
+    trace ("customTag [tag] = " + customTag)
+    trace ("useBranchAsTag [tagWithBranch] = " + useBranchNameAsTag.ToString())
+    trace ("deleteBranches [delete] = " + deleteBranches.ToString())
+    trace ("branchToTag [branchToTag] = " + branchToTag)
+    trace ("destinationRegex [destination] = " + validDestinationRegex)
 )
 
 ////////////////////////////////
