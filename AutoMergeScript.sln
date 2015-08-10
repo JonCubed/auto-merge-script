@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AutoMerge", "AutoMerge\AutoMerge.fsproj", "{37F9E4DE-4633-4B94-BDAA-6FC699643CCA}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AutoMergeScript", "AutoMerge\AutoMergeScript.fsproj", "{37F9E4DE-4633-4B94-BDAA-6FC699643CCA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{25DA6DC6-4FD7-4C37-A105-8569FE5F71AF}"
 	ProjectSection(SolutionItems) = preProject
