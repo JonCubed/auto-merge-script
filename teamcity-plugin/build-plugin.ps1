@@ -5,6 +5,10 @@ cls
 $pluginFolder = ".\plugin"
 $packingFolder = ".\.artifacts"
 $agentFolder = Join-Path $packingFolder "agent"
+$toolsFolder = Join-Path $agentFolder "tools"
+$toolsSourceFolder = "..\src\AutoMerge"
+$agentZipName = "GitAutoMerge.zip"
+$pluginZipName = "GitAutoMerge-plugin.zip"
 
 # Create .package folder
 if (-not (Test-Path $packingFolder))
@@ -20,15 +24,15 @@ else
 
 Write-Output "Copying files to $packingFolder"
 Copy-Item $pluginFolder\* $packingFolder -Recurse
-Copy-Item ..\src\AutoMerge\AutoMerge.ps1,..\src\AutoMerge\AutoMerge.fsx $agentFolder\tools
+Copy-Item (Join-Path $toolsSourceFolder AutoMerge.ps1),(Join-Path $toolsSourceFolder AutoMerge.fsx) $toolsFolder
 
 
 Write-Output "Creating plugin zip in $packingFolder"
-Compress-Archive -Path $agentFolder\* -DestinationPath $agentFolder\GitAutoMerge.zip
-Remove-Item $agentFolder\* -Exclude GitAutoMerge.zip -Recurse -Force
+Compress-Archive -Path $agentFolder\* -DestinationPath (Join-Path $agentFolder $agentZipName)
+Remove-Item $agentFolder\* -Exclude $agentZipName -Recurse -Force
 
-Compress-Archive -Path $packingFolder\* -DestinationPath $packingFolder\GitAutoMerge-plugin.zip
-Remove-Item $packingFolder\* -Recurse -Exclude GitAutoMerge-plugin.zip -Force
+Compress-Archive -Path $packingFolder\* -DestinationPath (Join-Path $packingFolder $pluginZipName)
+Remove-Item $packingFolder\* -Recurse -Exclude $pluginZipName -Force
 
 
 Write-Output "Build complete"
