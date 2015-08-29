@@ -3,7 +3,7 @@
   <description>Merges current branch into one or more branches in Git.</description>
   <settings>
     <parameters>
-      <param name="remote" value="" spec="text description='Name of the remote' label='Git Remote' display='normal'" />
+      <param name="remote" value="" spec="text description='Name of the remote. Default is &quot;origin&quot;' label='Git Remote' display='normal'" />
       <param name="validSource" value="" spec="text description='A regular expression that determines which branches are consider a valid source branch to branch from. Default is &quot;(hotfix|release)/.*&quot;' label='Valid Source Branch RegEx' display='normal'" />
       <param name="destination" value="" spec="text description='A regular expression that determines which branches are consider a valid destination branch to merge into. Default is &quot;^origin/(master|develop)&quot;' label='Valid Destination Branch RegEx' display='normal'" />
       <param name="tag" value="" spec="text description='A custom tag to tag a destination branch with' label='Custom Tag' display='normal'" />
