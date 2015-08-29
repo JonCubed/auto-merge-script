@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta-runner name="Git Auto Merge">
+  <description>Merges current branch into one or more branches in Git.</description>
+  <settings>
+    <parameters>
+      <param name="remote" value="" spec="text description='Name of the remote' label='Git Remote' display='normal'" />
+      <param name="validSource" value="" spec="text description='A regular expression that determines which branches are consider a valid source branch to branch from. Default is &quot;(hotfix|release)/.*&quot;' label='Valid Source Branch RegEx' display='normal'" />
+      <param name="destination" value="" spec="text description='A regular expression that determines which branches are consider a valid destination branch to merge into. Default is &quot;^origin/(master|develop)&quot;' label='Valid Destination Branch RegEx' display='normal'" />
+      <param name="tag" value="" spec="text description='A custom tag to tag a destination branch with' label='Custom Tag' display='normal'" />
+      <param name="tagWithBranch" value="" spec="checkbox description='Tag a destination branch with with the branch name' label='Add Tag As Branch Name' display='normal' checkedValue='true' uncheckedValue='false'" />
+      <param name="branchToTag" value="" spec="text description='Destination branch that should have tags applied to it. Default is &quot;master&quot;' label='Branch To Tag' display='normal'" />
+      <param name="delete" value="" spec="checkbox description='When enabled source branch will not be deleted' label='Keep Source' display='normal' checkedValue='false' uncheckedValue='true'" />
+    </parameters>
+    <build-runners>
+      <runner name="Git Auto Merge Runner" type="jetbrains_powershell">
+        <parameters>
+          <param name="jetbrains_powershell_bitness" value="x86" />
+          <param name="jetbrains_powershell_execution" value="PS1" />
+          <param name="jetbrains_powershell_scriptArguments" value="-nugetexe %teamcity.tool.NuGet.CommandLine.DEFAULT.nupkg%\tools\nuget.exe -remote %remote% -validSource %validSource% -destination %destination% -tag %tag% -tagWithBranch %tagWithBranch% -branchToTag %branchToTag% -delete %delete%" />
+          <param name="jetbrains_powershell_script_file" value="%teamcity.agent.tools.dir%\GitAutoMerge\tools\AutoMerge.ps1" />
+          <param name="jetbrains_powershell_script_mode" value="FILE" />
+          <param name="teamcity.step.mode" value="default" />
+        </parameters>
+      </runner>
+    </build-runners>
+    <requirements />
+  </settings>
+</meta-runner>
