@@ -2,6 +2,7 @@
 #r @"./packages/FAKE/tools/FakeLib.dll"
 
 open Fake
+open System
 open System.Text.RegularExpressions
 
 let getBoolBuildParamOrDefault name defaultValue =
@@ -143,6 +144,7 @@ Target "GetBranches" (fun _ ->
 )
 
 Target "Debug" (fun _ ->
+    trace ("Current Directory = " + Environment.CurrentDirectory)
     trace ("sourceBranchName = " + sourceBranchName)
     trace ("repoDirectory = " + repoDirectory)
     trace ("remoteName [remote] = " + remoteName)

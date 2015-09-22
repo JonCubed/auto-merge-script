@@ -16,7 +16,7 @@
         <parameters>
           <param name="jetbrains_powershell_bitness" value="x86" />
           <param name="jetbrains_powershell_execution" value="PS1" />
-          <param name="jetbrains_powershell_scriptArguments" value="-nugetexe %teamcity.tool.NuGet.CommandLine.DEFAULT.nupkg%\tools\nuget.exe -remote %remote% -validSource %validSource% -destination %destination% -tag %tag% -tagWithBranch %tagWithBranch% -branchToTag %branchToTag% -delete %delete%" />
+          <param name="jetbrains_powershell_scriptArguments" value="-nugetexe '%teamcity.tool.NuGet.CommandLine.DEFAULT.nupkg%\tools\nuget.exe' -remote '%remote%' -validSource '%validSource%' -destination '%destination%' -tag '%tag%' -tagWithBranch %tagWithBranch% -branchToTag '%branchToTag%' -delete %delete%" />
           <param name="jetbrains_powershell_script_file" value="%teamcity.agent.tools.dir%\GitAutoMerge\tools\AutoMerge.ps1" />
           <param name="jetbrains_powershell_script_mode" value="FILE" />
           <param name="teamcity.step.mode" value="default" />

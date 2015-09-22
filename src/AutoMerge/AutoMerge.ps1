@@ -42,6 +42,15 @@ if ($delete) {
 Write-Output "Command line parameters passed in:"
 $params | Out-String | Write-Output
 
+
+$mergeScriptPath = Join-Path $PSScriptRoot AutoMerge.fsx
+$location = Get-Location
+if (-not($PSScriptRoot -eq $location))
+{
+    Write-Output "Copying script to current location ($location)"
+    Copy-Item $mergeScriptPath .
+}
+
 . $nugetExe Install "FAKE" -OutputDirectory "packages" -ExcludeVersion
-Invoke-Expression ".\packages\FAKE\tools\Fake.exe AutoMerge.fsx Debug $params"
+Invoke-Expression ".\packages\FAKE\tools\Fake.exe AutoMerge.fsx $params"
 
